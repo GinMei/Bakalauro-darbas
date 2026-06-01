@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtualios Aplinkos Projektų Konverteris</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  h1 { font-size: 18px; font-weight: 600; color: #f0f4ff; margin-bottom: 4px; }
+  .subtitle { color: #64748b; font-size: 12px; }
+
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .header-title { flex: 1; min-width: 0; }
+
+  .lang-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .lang-selector label { margin-bottom: 0; white-space: nowrap; font-size: 11px; }
+  #languageSelector { width: auto; min-width: 100px; margin-bottom: 0; font-size: 12px; padding: 5px 8px; }
+
+  .card {
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+
+  input[type="file"], select {
+    width: 100%;
+    padding: 8px 10px;
+    background: #0f1117;
+    border: 1px solid #2d3148;
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  input[type="file"]:focus, select:focus { outline: 2px solid #4f6ef7; }
+
+  .engine-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .swap-btn {
+    padding: 6px 10px;
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 6px;
+    color: #4f6ef7;
+    font-size: 16px;
+    margin-bottom: 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    align-self: end;
+  }
+  .swap-btn:hover { background: #2d3148; color: #7b96ff; }
+  .engine-row select { margin-bottom: 0; }
+  .engine-col label { margin-bottom: 6px; }
+
+  button {
+    padding: 9px 20px;
+    background: #4f6ef7;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: #3d5ce6; }
+  button:disabled { background: #2d3148; color: #4a5568; cursor: not-allowed; }
+
+  #download-project-btn            { background: #5b3fa0; margin-left: 10px; }
+  #download-project-btn:hover      { background: #4a2f8a; }
+  #download-report-data-btn        { background: #1e4d3a; margin-left: 10px; }
+  #download-report-data-btn:hover  { background: #163b2c; }
+
+  #expiry-notice {
+    display: none;
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    background: #2d1f00;
+    color: #fcd34d;
+    border: 1px solid #78350f;
+  }
+
+  #status {
+    display: none;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  #status.loading { background: #1e2d4d; color: #7eb3f7; border: 1px solid #2d4a7a; display: block; }
+  #status.success { background: #0f2d1e; color: #4ade80; border: 1px solid #1a4731; display: block; }
+  #status.error   { background: #2d1010; color: #f87171; border: 1px solid #4a1a1a; display: block; }
+
+  #summary { display: none; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .pill {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px;
+    font-weight: 600; letter-spacing: 0.02em;
+  }
+  .pill-blue   { background: #1e2d4d; color: #7eb3f7; }
+  .pill-green  { background: #0f2d1e; color: #4ade80; }
+  .pill-yellow { background: #2d2410; color: #fbbf24; }
+  .pill-red    { background: #2d1010; color: #f87171; }
+
+  #scene-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  #scene-bar label { margin-bottom: 0; white-space: nowrap; }
+  #scene-select { flex: 1; margin-bottom: 0; }
+  #scene-info { font-size: 11px; color: #64748b; white-space: nowrap; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; background: transparent; border: 1px solid #2d3148;
+    border-radius: 5px; color: #64748b; font-size: 12px; font-weight: 500; cursor: pointer;
+  }
+  .tab-btn:hover { color: #e2e8f0; background: #1a1d27; }
+  .tab-btn.active { background: #4f6ef7; border-color: #4f6ef7; color: #fff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  pre {
+    background: #0a0c14; border: 1px solid #2d3148; border-radius: 6px;
+    padding: 14px; overflow: auto; max-height: 480px; font-size: 11.5px;
+    line-height: 1.6; color: #c9d1e0; white-space: pre;
+  }
+
+  #warnings-list { list-style: none; }
+  #warnings-list li {
+    padding: 7px 12px; border-left: 3px solid #fbbf24; background: #1e1a0a;
+    border-radius: 0 4px 4px 0; margin-bottom: 6px; font-size: 12px; color: #fde68a;
+  }
+  #warnings-list.empty li { border-left-color: #4ade80; background: #0a1e12; color: #86efac; }
+
+  .job-id { font-size: 11px; color: #4a5568; margin-top: 8px; font-family: monospace; }
+
+  .tree { font-family: monospace; font-size: 12px; line-height: 1.8; }
+  .tree-node { cursor: default; }
+  .tree-node .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 10px; margin-left: 6px; vertical-align: middle;
+  }
+  .badge-camera  { background: #1e2d4d; color: #7eb3f7; }
+  .badge-light   { background: #2d2410; color: #fbbf24; }
+  .badge-entity  { background: #0f2d1e; color: #4ade80; }
+  .badge-group   { background: #1a1d27; color: #64748b; }
+  .badge-prefab  { background: #2d1040; color: #c084fc; }
+  .badge-partial { background: #2d1010; color: #f87171; }
+
+  /* ── Log system ───────────────────────────────────────────────────────────── */
+
+  .log-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .log-toolbar-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .log-toolbar-sep {
+    width: 1px;
+    height: 18px;
+    background: #2d3148;
+    margin: 0 2px;
+  }
+
+  .log-filter-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid #2d3148;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: color 0.1s, background 0.1s;
+  }
+  .log-filter-btn:hover { color: #e2e8f0; background: #1a1d27; }
+  .log-filter-btn.active { background: #2d3148; color: #e2e8f0; border-color: #4a5568; }
+
+  .log-nav-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: #141825;
+    border: 1px solid #2d4a7a;
+    border-radius: 4px;
+    color: #7eb3f7;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .log-nav-btn:hover { background: #1e2d4d; }
+
+  .log-action-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 4px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.1s;
+  }
+  .log-action-btn:hover { color: #e2e8f0; }
+
+  .log-container {
+    background: #07090f;
+    border: 1px solid #2d3148;
+    border-radius: 6px;
+    padding: 10px 14px;
+    overflow-y: auto;
+    max-height: 460px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 11.5px;
+    line-height: 1.75;
+  }
+
+  .log-entry {
+    display: flex;
+    gap: 8px;
+    padding: 1px 0;
+    word-break: break-word;
+  }
+
+  .log-ts    { color: #374151; flex-shrink: 0; user-select: none; }
+  .log-badge { flex-shrink: 0; font-weight: 600; min-width: 82px; }
+  .log-msg   { flex: 1; }
+
+  .log-info    .log-badge { color: #4a5568; }
+  .log-info    .log-msg   { color: #9ca3af; }
+  .log-warning .log-badge { color: #d97706; }
+  .log-warning .log-msg   { color: #fde68a; font-weight: 500; }
+  .log-error    .log-badge { color: #ef4444; }
+  .log-error    .log-msg   { color: #fca5a5; font-weight: 600; }
+  .log-decision .log-badge { color: #7c3aed; }
+  .log-decision .log-msg   { color: #c4b5fd; }
+
+  .log-stage-header {
+    color: #4f6ef7;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 0 3px 0;
+    margin-top: 2px;
+    border-top: 1px solid #1a1d27;
+    user-select: none;
+  }
+  .log-stage-header:first-child { border-top: none; padding-top: 2px; }
+
+  .log-empty {
+    display: none;
+    color: #374151;
+    font-size: 12px;
+    padding: 28px 0;
+    text-align: center;
+    font-family: monospace;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Progress bar ─────────────────────────────────────────────────────────── */
+
+  #progress-area {
+    display: none;
+    margin-bottom: 16px;
+    padding: 14px 18px;
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 8px;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  #progress-stage {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  #progress-pct {
+    font-size: 12px;
+    font-family: monospace;
+    color: #64748b;
+  }
+
+  .progress-track {
+    background: #0f1117;
+    border: 1px solid #2d3148;
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4f6ef7, #7b96ff);
+    border-radius: 6px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  #progress-bar.error { background: #ef4444; transition: none; }
+
+  #progress-details {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #4a5568;
+    min-height: 14px;
+  }
+
+  #progress-details.error { color: #f87171; }
+</style>
+</head>
+<body>
+
+<div class="header-row">
+  <div class="header-title">
+    <h1 data-i18n="page_title">Virtualios Aplinkos Projektų Konverteris</h1>
+    <p class="subtitle" data-i18n="subtitle">Įrankis žaidimų projektų konvertavimui ir analizei tarp skirtingų variklių, užtikrinantis sklandžią migraciją ir suderinamumą tarp platformų.</p>
+  </div>
+  <div class="lang-selector">
+    <label for="languageSelector" data-i18n="language_label">Kalba</label>
+    <select id="languageSelector">
+      <option value="lt">Lietuvių</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+</div>
+
+<!-- Upload card -->
+<div class="card">
+  <div class="engine-row">
+    <div class="engine-col">
+      <label for="source-engine-select" data-i18n="source_engine_label">Šaltinio variklis</label>
+      <select id="source-engine-select">
+        <option value="">Kraunama…</option>
+      </select>
+    </div>
+    <button class="swap-btn" onclick="swapEngines()" title="Sukeisti variklius">⇄</button>
+    <div class="engine-col">
+      <label for="target-engine-select" data-i18n="target_engine_label">Tikslo variklis</label>
+      <select id="target-engine-select">
+        <option value="">Kraunama…</option>
+      </select>
+    </div>
+  </div>
+
+  <label id="file-input-label" for="file-input">Unity projektas (tik .zip)</label>
+  <input type="file" id="file-input" accept=".zip">
+
+  <div style="margin: 10px 0;">
+    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+      <input type="checkbox" id="convert-scripts-check" checked>
+      <span data-i18n="convert_scripts_label">Konvertuoti skriptus</span>
+    </label>
+  </div>
+
+  <div style="margin: 10px 0;">
+    <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+      <input type="checkbox" id="consent-check">
+      <span data-i18n="consent_label">Sutinku, kad mano projektas būtų naudojamas šiam įrankiui tobulinti.</span>
+    </label>
+    <div style="margin-top:4px; font-size:0.8em; opacity:0.7;" data-i18n="consent_helper">
+      Projektas bus naudojamas tik mokymo tikslais, ištrintas po apdorojimo ir nenaudojamas jokiais kitais tikslais. Sutikimas neprivalomas.
+    </div>
+  </div>
+
+  <button id="convert-btn" onclick="runConvert()" disabled data-i18n="convert_btn">Konvertuoti</button>
+  <button id="download-project-btn" onclick="downloadProject()" disabled style="display:none">Atsisiųsti Godot projektą (.zip)</button>
+  <button id="download-report-data-btn" onclick="downloadReportData()" style="display:none" data-i18n="btn_download_report_data">Atsisiųsti ataskaitos duomenis</button>
+  <div id="expiry-notice"></div>
+</div>
+
+<!-- Status bar -->
+<div id="status"></div>
+
+<!-- Progress bar (shown while conversion is running) -->
+<div id="progress-area">
+  <div class="progress-header">
+    <span id="progress-stage"></span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="progress-track">
+    <div id="progress-bar"></div>
+  </div>
+  <div id="progress-details"></div>
+</div>
+
+<!-- Summary pills -->
+<div id="summary">
+  <span class="pill pill-blue"   id="pill-total"></span>
+  <span class="pill pill-green"  id="pill-mapped"></span>
+  <span class="pill pill-yellow" id="pill-partial"></span>
+  <span class="pill pill-red"    id="pill-unknown"></span>
+  <span class="pill pill-blue"   id="pill-prefabs" style="display:none"></span>
+  <span class="pill pill-blue"   id="pill-scenes"  style="display:none"></span>
+</div>
+
+<!-- Scene selector -->
+<div id="scene-bar">
+  <label for="scene-select" data-i18n="scene_select_label">Pasirinkti sceną</label>
+  <select id="scene-select" onchange="onSceneChange()"></select>
+  <span id="scene-info"></span>
+</div>
+
+<!-- Output card -->
+<div id="output-card" class="card" style="display:none">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tree"   onclick="switchTab('tree')"   data-i18n="tab_tree">Mazgų medis</button>
+    <button class="tab-btn"        data-tab="ir"     onclick="switchTab('ir')"     data-i18n="tab_ir">Scenos IR</button>
+    <button class="tab-btn"        data-tab="report" onclick="switchTab('report')" data-i18n="tab_report">Ataskaita</button>
+    <button class="tab-btn"        data-tab="logs"   onclick="switchTab('logs')"   data-i18n="tab_logs">Žurnalai</button>
+  </div>
+
+  <div id="tab-tree"     class="tab-panel active"><div id="tree-view" class="tree"></div></div>
+
+  <div id="tab-ir" class="tab-panel">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:6px">
+      <button id="btn-download-ir" onclick="downloadCurrentIR()" style="padding:4px 12px; font-size:12px; cursor:pointer" data-i18n="btn_download_ir">Atsisiųsti IR JSON</button>
+    </div>
+    <pre id="ir-output"></pre>
+  </div>
+
+  <div id="tab-report" class="tab-panel">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:6px">
+      <button id="btn-download-report" onclick="downloadReport()" style="padding:4px 12px; font-size:12px; cursor:pointer" data-i18n="btn_download_report">Atsisiųsti ataskaitą</button>
+    </div>
+    <pre id="report-output"></pre>
+  </div>
+
+  <!-- Logs tab -->
+  <div id="tab-logs" class="tab-panel">
+    <div class="log-toolbar">
+      <!-- Severity filters -->
+      <div class="log-toolbar-group">
+        <button class="log-filter-btn active" data-filter="ALL"      onclick="LogView.setFilter('ALL')"      data-i18n="log_filter_all">Visi</button>
+        <button class="log-filter-btn"         data-filter="WARNING"  onclick="LogView.setFilter('WARNING')"  data-i18n="log_filter_warn">⚠ Įspėjimai</button>
+        <button class="log-filter-btn"         data-filter="ERROR"    onclick="LogView.setFilter('ERROR')"    data-i18n="log_filter_error">✖ Klaidos</button>
+        <button class="log-filter-btn"         data-filter="DECISION" onclick="LogView.setFilter('DECISION')" data-i18n="log_filter_decisions">◆ Sprendimai</button>
+      </div>
+      <div class="log-toolbar-sep"></div>
+      <!-- Navigation -->
+      <div class="log-toolbar-group">
+        <button class="log-nav-btn" onclick="LogView.jumpToFirst()" data-i18n="log_jump_first">Pirma klaida</button>
+        <button class="log-nav-btn" onclick="LogView.jumpToNext()"  data-i18n="log_jump_next">Kita klaida</button>
+      </div>
+      <div class="log-toolbar-sep"></div>
+      <!-- Actions -->
+      <div class="log-toolbar-group">
+        <button class="log-action-btn" id="log-copy-btn" onclick="copyLogs()" data-i18n="log_copy">Kopijuoti</button>
+        <button class="log-action-btn" onclick="downloadLogs('txt')"  data-i18n="log_dl_txt">↓ .txt</button>
+        <button class="log-action-btn" onclick="downloadLogs('json')" data-i18n="log_dl_json">↓ .json</button>
+      </div>
+    </div>
+    <div id="log-container" class="log-container"></div>
+    <div id="log-empty" class="log-empty" data-i18n="log_no_entries">Nėra žurnalo įrašų</div>
+  </div>
+
+  <p class="job-id" id="job-id-label"></p>
+</div>
+
+<script>
+// ── Translation dictionary ────────────────────────────────────────────────────
+const translations = {
+  lt: {
+    page_title:            'Virtualios Aplinkos Projektų Konverteris',
+    subtitle:              'Įrankis žaidimų projektų konvertavimui ir analizei tarp skirtingų variklių, užtikrinantis sklandžią migraciją ir suderinamumą tarp platformų.',
+    language_label:        'Kalba',
+    source_engine_label:   'Šaltinio variklis',
+    target_engine_label:   'Tikslo variklis',
+    file_label_unity:      'Unity projektas (tik .zip)',
+    file_label_godot:      'Godot projektas (tik .zip)',
+    convert_btn:           'Konvertuoti',
+    convert_scripts_label: 'Konvertuoti skriptus',
+    consent_label:         'Sutinku, kad mano projektas būtų naudojamas šiam įrankiui tobulinti.',
+    consent_helper:        'Projektas bus naudojamas tik mokymo tikslais, ištrintas po apdorojimo ir nenaudojamas jokiais kitais tikslais. Sutikimas neprivalomas.',
+    download_unity_btn:    'Atsisiųsti Unity projektą (.zip)',
+    download_godot_btn:    'Atsisiųsti Godot projektą (.zip)',
+    scene_select_label:    'Pasirinkti sceną',
+    tab_tree:              'Mazgų medis',
+    tab_ir:                'Scenos IR',
+    tab_report:            'Ataskaita',
+    tab_logs:              'Žurnalai',
+    btn_download_ir:          'Atsisiųsti IR JSON',
+    btn_download_report:      'Atsisiųsti ataskaitą',
+    btn_download_report_data: 'Atsisiųsti ataskaitos duomenis (.zip)',
+    swap_title:            'Sukeisti variklius',
+    loading_converting:    'Konvertuojama…',
+    network_error:         'Tinklo klaida: ',
+    error_prefix:          'Klaida: ',
+    converted_with_errors: 'Konvertuota su klaidomis: ',
+    conversion_success:    'Konversija sėkminga',
+    no_nodes:              'Nėra mazgų',
+    scene_unavailable:     "Scena '{name}' nepasiekiama",
+    no_warnings:           'Nėra įspėjimų — švari konversija.',
+    job_label:             'Įrašas: ',
+    badge_prefab:          'prefabas',
+    badge_group:           'grupė',
+    node_singular:         'mazgas',
+    node_plural:           'mazgai',
+    pill_score:            'Balas {score}%',
+    pill_total:            '{n} mazgų',
+    pill_mapped:           '{n} atvaizduota',
+    pill_partial:          '{n} dalinis',
+    pill_unknown:          '{n} nežinoma',
+    prefab_singular:       'prefabas',
+    prefab_plural:         'prefabai',
+    scene_singular:        'scena',
+    scene_plural:          'scenos',
+    expiry_notice:         '⚠ Projektas bus automatiškai ištrintas {time} (po {minutes} min.). Atsisiųskite dabar.',
+    // Log system
+    log_filter_all:        'Visi',
+    log_filter_warn:       '⚠ Įspėjimai',
+    log_filter_error:      '✖ Klaidos',
+    log_filter_decisions:  '◆ Sprendimai',
+    log_jump_first:        'Pirma klaida',
+    log_jump_next:         'Kita klaida',
+    log_copy:              'Kopijuoti',
+    log_dl_txt:            '↓ .txt',
+    log_dl_json:           '↓ .json',
+    log_no_entries:        'Nėra žurnalo įrašų',
+    log_copied:            'Nukopijuota!',
+    stage_setup:           'Sąranka',
+    stage_conversion:      'Konvertavimas',
+    stage_results:         'Rezultatai',
+    // Progress bar
+    progress_init:         'Pradedama…',
+    progress_complete:     'Baigta',
+    progress_failed:       'Konvertavimas nesėkmingas',
+    error_project_deleted: 'Šis projektas buvo ištrintas ir nebegalima jo pasiekti.',
+  },
+  en: {
+    page_title:            'Virtual Environment Project Converter',
+    subtitle:              'A tool for converting and analysing game projects between different engines, ensuring smooth migration and cross-platform compatibility.',
+    language_label:        'Language',
+    source_engine_label:   'Source Engine',
+    target_engine_label:   'Target Engine',
+    file_label_unity:      'Unity project (.zip only)',
+    file_label_godot:      'Godot project (.zip only)',
+    convert_btn:           'Convert',
+    convert_scripts_label: 'Convert scripts',
+    consent_label:         'I consent to my project being used to improve this tool.',
+    consent_helper:        'The project will be used solely for training purposes and will be deleted after processing. Consent is optional.',
+    download_unity_btn:    'Download Unity project (.zip)',
+    download_godot_btn:    'Download Godot project (.zip)',
+    scene_select_label:    'Select scene',
+    tab_tree:              'Node Tree',
+    tab_ir:                'Scene IR',
+    tab_report:            'Report',
+    tab_logs:              'Logs',
+    btn_download_ir:          'Download IR JSON',
+    btn_download_report:      'Download Report',
+    btn_download_report_data: 'Download Report Data (.zip)',
+    swap_title:            'Swap engines',
+    loading_converting:    'Converting…',
+    network_error:         'Network error: ',
+    error_prefix:          'Error: ',
+    converted_with_errors: 'Converted with errors: ',
+    conversion_success:    'Conversion successful',
+    no_nodes:              'No nodes',
+    scene_unavailable:     "Scene '{name}' unavailable",
+    no_warnings:           'No warnings — clean conversion.',
+    job_label:             'Job: ',
+    badge_prefab:          'prefab',
+    badge_group:           'group',
+    node_singular:         'node',
+    node_plural:           'nodes',
+    pill_score:            'Score {score}%',
+    pill_total:            '{n} nodes',
+    pill_mapped:           '{n} mapped',
+    pill_partial:          '{n} partial',
+    pill_unknown:          '{n} unknown',
+    prefab_singular:       'prefab',
+    prefab_plural:         'prefabs',
+    scene_singular:        'scene',
+    scene_plural:          'scenes',
+    expiry_notice:         '⚠ This project will be automatically deleted at {time} (in {minutes} min.). Download it now.',
+    // Log system
+    log_filter_all:        'All',
+    log_filter_warn:       '⚠ Warnings',
+    log_filter_error:      '✖ Errors',
+    log_filter_decisions:  '◆ Decisions',
+    log_jump_first:        'First error',
+    log_jump_next:         'Next issue',
+    log_copy:              'Copy',
+    log_dl_txt:            '↓ .txt',
+    log_dl_json:           '↓ .json',
+    log_no_entries:        'No log entries',
+    log_copied:            'Copied!',
+    stage_setup:           'Setup',
+    stage_conversion:      'Conversion',
+    stage_results:         'Results',
+    // Progress bar
+    progress_init:         'Starting…',
+    progress_complete:     'Complete',
+    progress_failed:       'Conversion failed',
+    error_project_deleted: 'This project has been deleted and can no longer be accessed.',
+  }
+};
+
+// ── Language state ────────────────────────────────────────────────────────────
+let currentLanguage = localStorage.getItem('language') || 'lt';
+
+function getTranslation(key, vars) {
+  let text = (translations[currentLanguage] || translations.lt)[key] || key;
+  if (vars) Object.entries(vars).forEach(([k, v]) => { text = text.replace(`{${k}}`, v); });
+  return text;
+}
+
+function updateLanguage(lang) {
+  currentLanguage = lang;
+  localStorage.setItem('language', lang);
+  document.documentElement.lang = lang;
+  document.title = getTranslation('page_title');
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = (translations[lang] || translations.lt)[key];
+    if (val !== undefined) el.textContent = val;
+  });
+
+  document.querySelector('.swap-btn').title = getTranslation('swap_title');
+  updateLabels();
+
+  if (lastConversionMeta) refreshDynamicText();
+
+  if (currentSceneIR) {
+    document.getElementById('tree-view').innerHTML =
+      renderTree(currentSceneIR.nodes || [], 0) ||
+      `<span style="color:#4a5568">${getTranslation('no_nodes')}</span>`;
+    const n = currentSceneIR.node_count || 0;
+    document.getElementById('scene-info').textContent =
+      `${n} ${n === 1 ? getTranslation('node_singular') : getTranslation('node_plural')}  •  IR v${currentSceneIR.ir_version || '?'}`;
+  }
+
+  // Re-render log view so stage headers use the new language
+  if (LogStore.entries.length > 0) LogView.render();
+}
+
+// ── Global state ──────────────────────────────────────────────────────────────
+let _allSourceOptions  = [];
+let _allTargetOptions  = [];
+let _prevSourceValue   = null;
+
+let currentJobId       = null;
+let currentProjectName = null;
+let allScenesIR        = {};
+let currentSceneIR     = null;
+let lastConversionMeta = null;
+let lastReport         = null;
+
+// ── Download helpers ──────────────────────────────────────────────────────────
+async function downloadProject() {
+  if (!currentJobId) return;
+  try {
+    const resp = await fetch(`/job/${currentJobId}/download_project`);
+    if (resp.status === 404) {
+      const msg = getTranslation('error_project_deleted');
+      setStatus(msg, 'error');
+      LogStore.add('ERROR', msg, {}, 'results');
+      LogView.render();
+      return;
+    }
+    if (!resp.ok) {
+      const errBody = await resp.json().catch(() => ({}));
+      throw new Error(errBody.detail || `HTTP ${resp.status}`);
+    }
+    const blob = await resp.blob();
+    const cd   = resp.headers.get('Content-Disposition') || '';
+    const m    = cd.match(/filename="([^"]+)"/);
+    _triggerDownload(blob, m ? m[1] : `${currentProjectName || currentJobId}.zip`);
+  } catch (e) {
+    setStatus(getTranslation('error_prefix') + e.message, 'error');
+    LogStore.add('ERROR', 'Download failed: ' + e.message, {}, 'results');
+    LogView.render();
+  }
+}
+
+function _triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Minimal ZIP builder (STORE, no compression, no external libraries) ────────
+const MiniZip = {
+  _tbl: null,
+  _makeTable() {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c;
+    }
+    return t;
+  },
+  _crc32(bytes) {
+    if (!this._tbl) this._tbl = this._makeTable();
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) c = this._tbl[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  },
+  _u32(n) { return [(n) & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]; },
+  _u16(n) { return [(n) & 0xff, (n >> 8) & 0xff]; },
+
+  build(files) {
+    const enc  = new TextEncoder();
+    const now  = new Date();
+    const dT   = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1));
+    const dD   = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate());
+    const locals = [], centrals = [];
+    let offset = 0;
+
+    for (const f of files) {
+      const nb  = enc.encode(f.name);
+      const dat = (f.data instanceof Uint8Array) ? f.data : enc.encode(f.data);
+      const crc = this._crc32(dat);
+      const sz  = dat.length;
+      const lfh = new Uint8Array([
+        0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ...this._u16(dT), ...this._u16(dD),
+        ...this._u32(crc), ...this._u32(sz), ...this._u32(sz),
+        ...this._u16(nb.length), 0x00, 0x00, ...nb,
+      ]);
+      locals.push(lfh, dat);
+      centrals.push({ nb, crc, sz, offset });
+      offset += lfh.length + sz;
+    }
+
+    const cdParts = centrals.map(c => new Uint8Array([
+      0x50, 0x4b, 0x01, 0x02,        // signature
+      0x14, 0x00,                    // version made by
+      0x14, 0x00,                    // version needed
+      0x00, 0x00,                    // flags
+      0x00, 0x00,                    // compression (STORE)
+      ...this._u16(dT), ...this._u16(dD),
+      ...this._u32(c.crc), ...this._u32(c.sz), ...this._u32(c.sz),
+      ...this._u16(c.nb.length),
+      0x00, 0x00,                    // extra field length  (u16)
+      0x00, 0x00,                    // file comment length (u16)
+      0x00, 0x00,                    // disk number start   (u16)
+      0x00, 0x00,                    // internal attributes (u16)
+      0x00, 0x00, 0x00, 0x00,        // external attributes (u32) ← 4 bytes, not 2
+      ...this._u32(c.offset),
+      ...c.nb,
+    ]));
+    const cdSize = cdParts.reduce((s, p) => s + p.length, 0);
+    const eocd = new Uint8Array([
+      0x50, 0x4b, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00,
+      ...this._u16(centrals.length), ...this._u16(centrals.length),
+      ...this._u32(cdSize), ...this._u32(offset), 0x00, 0x00,
+    ]);
+
+    const all   = [...locals, ...cdParts, eocd];
+    const total = all.reduce((s, p) => s + p.length, 0);
+    const buf   = new Uint8Array(total);
+    let pos = 0;
+    for (const p of all) { buf.set(p, pos); pos += p.length; }
+    return buf;
+  },
+};
+
+function downloadReportData() {
+  if (!currentJobId) return;
+  const enc   = new TextEncoder();
+  const files = [];
+  const name  = (currentProjectName || currentJobId || 'conversion')
+    .replace(/[^a-z0-9_\-]/gi, '_');
+
+  if (lastReport)
+    files.push({ name: 'report.json',       data: enc.encode(JSON.stringify(lastReport,  null, 2)) });
+  if (Object.keys(allScenesIR).length)
+    files.push({ name: 'all_scenes_ir.json', data: enc.encode(JSON.stringify(allScenesIR, null, 2)) });
+
+  const entries = LogStore.entries;
+  if (entries.length) {
+    files.push({ name: 'logs.json', data: enc.encode(JSON.stringify(entries, null, 2)) });
+    const lines = entries.map(e => {
+      const ts  = e.timestamp.slice(11, 19);
+      const ctx = Object.keys(e.context).length ? '  ' + JSON.stringify(e.context) : '';
+      const stg = e.stage ? `[${e.stage.toUpperCase()}] ` : '';
+      return `[${ts}] [${e.level}] ${stg}${e.message}${ctx}`;
+    });
+    files.push({ name: 'logs.txt', data: enc.encode(lines.join('\n')) });
+  }
+
+  if (!files.length) return;
+  _triggerDownload(
+    new Blob([MiniZip.build(files)], { type: 'application/zip' }),
+    `${name}_report_data.zip`,
+  );
+}
+
+// ── Log storage ───────────────────────────────────────────────────────────────
+const LogStore = {
+  entries: [],
+  _id: 0,
+
+  add(level, message, context, stage) {
+    const entry = {
+      id:        ++this._id,
+      timestamp: new Date().toISOString(),
+      level,       // 'INFO' | 'WARNING' | 'ERROR'
+      message,
+      context:   context || {},
+      stage:     stage   || null,
+    };
+    this.entries.push(entry);
+    return entry;
+  },
+
+  clear() {
+    this.entries = [];
+    this._id     = 0;
+  },
+};
+
+// ── Log view ──────────────────────────────────────────────────────────────────
+const LogView = {
+  _filter:    'ALL',
+  _navCursor: -1,
+
+  setFilter(f) {
+    this._filter    = f;
+    this._navCursor = -1;
+    document.querySelectorAll('.log-filter-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === f);
+    });
+    this.render();
+  },
+
+  render() {
+    const container = document.getElementById('log-container');
+    const empty     = document.getElementById('log-empty');
+    this._navCursor = -1;
+
+    const visible = LogStore.entries.filter(e =>
+      this._filter === 'ALL'     ||
+      e.level === this._filter   ||
+      (this._filter === 'ISSUES' && (e.level === 'WARNING' || e.level === 'ERROR'))
+    );
+
+    if (!visible.length) {
+      container.innerHTML  = '';
+      empty.style.display  = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const frag      = document.createDocumentFragment();
+    let   lastStage = null;
+
+    for (const entry of visible) {
+      // Stage group header when stage changes
+      if (entry.stage && entry.stage !== lastStage) {
+        lastStage     = entry.stage;
+        const hdr     = document.createElement('div');
+        hdr.className = 'log-stage-header';
+        hdr.textContent = '── ' + (getTranslation('stage_' + entry.stage) || entry.stage) + ' ──';
+        frag.appendChild(hdr);
+      }
+      frag.appendChild(this._makeRow(entry));
+    }
+
+    container.innerHTML = '';
+    container.appendChild(frag);
+  },
+
+  _makeRow(entry) {
+    const row       = document.createElement('div');
+    row.className   = `log-entry log-${entry.level.toLowerCase()}`;
+
+    const ts        = document.createElement('span');
+    ts.className    = 'log-ts';
+    ts.textContent  = '[' + entry.timestamp.slice(11, 19) + ']';
+
+    const badge     = document.createElement('span');
+    badge.className = 'log-badge';
+    const icon      = entry.level === 'WARNING'  ? '⚠'
+                    : entry.level === 'ERROR'    ? '✖'
+                    : entry.level === 'DECISION' ? '◆'
+                    : '·';
+    badge.textContent = `[${icon} ${entry.level}]`;
+
+    const msg       = document.createElement('span');
+    msg.className   = 'log-msg';
+    msg.textContent = entry.message;
+
+    row.append(ts, badge, msg);
+    return row;
+  },
+
+  jumpToFirst() {
+    const container = document.getElementById('log-container');
+    const el = container.querySelector('.log-error') || container.querySelector('.log-warning');
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const all = Array.from(container.querySelectorAll('.log-error, .log-warning'));
+    this._navCursor = all.indexOf(el);
+  },
+
+  jumpToNext() {
+    const container = document.getElementById('log-container');
+    const issues    = Array.from(container.querySelectorAll('.log-error, .log-warning'));
+    if (!issues.length) return;
+    this._navCursor = (this._navCursor + 1) % issues.length;
+    issues[this._navCursor].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+};
+
+// ── Log download / copy ───────────────────────────────────────────────────────
+function downloadLogs(format) {
+  const entries = LogStore.entries;
+  if (!entries.length) return;
+
+  if (format === 'json') {
+    const content = JSON.stringify(entries, null, 2);
+    _triggerDownload(new Blob([content], { type: 'application/json' }), `conversion_logs_${Date.now()}.json`);
+  } else {
+    const lines = entries.map(e => {
+      const ts  = e.timestamp.slice(11, 19);
+      const ctx = Object.keys(e.context).length ? '  ' + JSON.stringify(e.context) : '';
+      const stg = e.stage ? `[${e.stage.toUpperCase()}] ` : '';
+      return `[${ts}] [${e.level}] ${stg}${e.message}${ctx}`;
+    });
+    _triggerDownload(new Blob([lines.join('\n')], { type: 'text/plain' }), `conversion_logs_${Date.now()}.txt`);
+  }
+}
+
+function copyLogs() {
+  const lines = LogStore.entries.map(e => {
+    const ts  = e.timestamp.slice(11, 19);
+    const stg = e.stage ? `[${e.stage.toUpperCase()}] ` : '';
+    return `[${ts}] [${e.level}] ${stg}${e.message}`;
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = document.getElementById('log-copy-btn');
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = getTranslation('log_copied');
+    setTimeout(() => { btn.textContent = getTranslation('log_copy'); }, 1500);
+  }).catch(() => {});
+}
+
+// ── Engine dropdown population ────────────────────────────────────────────────
+function _populateSelect(id, values, fallback) {
+  const sel  = document.getElementById(id);
+  sel.innerHTML = '';
+  const list = (values && values.length) ? values : [fallback];
+  list.forEach(v => {
+    const opt     = document.createElement('option');
+    opt.value     = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+// Repopulate target dropdown excluding the currently selected source engine.
+// Pass forceValue to override which option gets selected after repopulation.
+function _refreshTargetOptions(forceValue) {
+  const srcVal   = document.getElementById('source-engine-select').value;
+  const tgt      = document.getElementById('target-engine-select');
+  const keepVal  = forceValue !== undefined ? forceValue : tgt.value;
+  tgt.innerHTML  = '';
+  const filtered = _allTargetOptions.filter(v => v !== srcVal);
+  filtered.forEach(v => {
+    const opt       = document.createElement('option');
+    opt.value       = v;
+    opt.textContent = v;
+    tgt.appendChild(opt);
+  });
+  if (filtered.includes(keepVal)) tgt.value = keepVal;
+}
+
+async function loadVersions() {
+  try {
+    const r = await fetch('/versions');
+    const d = await r.json();
+    const isUnity = v => (v || '').toLowerCase().startsWith('unity');
+    _allSourceOptions = (d.source_engine_options || ['Unity 6000.3.9f1', 'Godot 4.5']).filter(v => !isUnity(v));
+    _allTargetOptions = d.target_engine_options || ['Godot 4.5', 'Unity 6000.3.9f1'];
+    _populateSelect('source-engine-select', _allSourceOptions, 'Godot 4.5');
+    _prevSourceValue = document.getElementById('source-engine-select').value;
+    _refreshTargetOptions();
+  } catch (e) {
+    _allSourceOptions = ['Godot 4.5'];
+    _allTargetOptions = ['Godot 4.5', 'Unity 6000.3.9f1'];
+    _populateSelect('source-engine-select', null, 'Godot 4.5');
+    _prevSourceValue = document.getElementById('source-engine-select').value;
+    _refreshTargetOptions();
+  }
+  checkReady();
+  updateLabels();
+}
+
+// ── Parse combined option string into parts ───────────────────────────────────
+// "Unity 6000.3.9f1" → { engine: "unity", version: "6000.3.9f1" }
+function parseEngineOption(option) {
+  const parts  = (option || '').trim().split(' ');
+  const engine = (parts[0] || '').toLowerCase();
+  return { engine, version: parts.slice(1).join(' ') || '' };
+}
+
+// ── Swap engine selections ────────────────────────────────────────────────────
+function swapEngines() {
+  const src    = document.getElementById('source-engine-select');
+  const oldSrc = src.value;
+  const oldTgt = document.getElementById('target-engine-select').value;
+  src.value        = oldTgt;
+  _prevSourceValue = oldTgt;
+  _refreshTargetOptions(oldSrc);
+  checkReady();
+  updateLabels();
+}
+
+// ── Ready check ───────────────────────────────────────────────────────────────
+function checkReady() {
+  const hasFile   = !!document.getElementById('file-input').files.length;
+  const hasSource = !!document.getElementById('source-engine-select').value;
+  const hasTarget = !!document.getElementById('target-engine-select').value;
+  document.getElementById('convert-btn').disabled = !(hasFile && hasSource && hasTarget);
+}
+
+// ── Update labels when engine selection changes ───────────────────────────────
+function updateLabels() {
+  const src = parseEngineOption(document.getElementById('source-engine-select').value);
+  const tgt = parseEngineOption(document.getElementById('target-engine-select').value);
+
+  document.getElementById('file-input-label').textContent =
+    src.engine === 'godot' ? getTranslation('file_label_godot') : getTranslation('file_label_unity');
+
+  document.getElementById('download-project-btn').textContent =
+    tgt.engine === 'unity' ? getTranslation('download_unity_btn') : getTranslation('download_godot_btn');
+}
+
+document.getElementById('file-input').addEventListener('change', checkReady);
+document.getElementById('source-engine-select').addEventListener('change', () => {
+  const newSrc = document.getElementById('source-engine-select').value;
+  const swapTo = (_prevSourceValue && _prevSourceValue !== newSrc) ? _prevSourceValue : undefined;
+  _prevSourceValue = newSrc;
+  _refreshTargetOptions(swapTo);
+  checkReady();
+  updateLabels();
+});
+document.getElementById('target-engine-select').addEventListener('change', () => { checkReady(); updateLabels(); });
+document.getElementById('languageSelector').addEventListener('change', e => updateLanguage(e.target.value));
+
+// ── Tab switching (data-tab attribute based — scales to any number of tabs) ───
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+}
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+function setStatus(msg, type) {
+  const el    = document.getElementById('status');
+  el.textContent = msg;
+  el.className   = type;
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+let _progressSource = null;
+
+function showProgress(pct, stage, details) {
+  const area = document.getElementById('progress-area');
+  area.style.display = 'block';
+  const bar  = document.getElementById('progress-bar');
+  bar.classList.remove('error');
+  bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  document.getElementById('progress-pct').textContent    = Math.min(100, pct) + '%';
+  document.getElementById('progress-stage').style.color  = '#e2e8f0';
+  document.getElementById('progress-stage').textContent  = stage  || '';
+  const det = document.getElementById('progress-details');
+  det.classList.remove('error');
+  det.textContent = details || '';
+}
+
+function hideProgress() {
+  document.getElementById('progress-area').style.display = 'none';
+  if (_progressSource) { _progressSource.close(); _progressSource = null; }
+}
+
+function freezeProgress(errorMsg) {
+  document.getElementById('progress-stage').style.color = '#f87171';
+  document.getElementById('progress-bar').classList.add('error');
+  const det = document.getElementById('progress-details');
+  det.classList.add('error');
+  det.textContent = errorMsg || getTranslation('progress_failed');
+  if (_progressSource) { _progressSource.close(); _progressSource = null; }
+}
+
+function _connectProgress(jobId, onDone) {
+  if (_progressSource) { _progressSource.close(); _progressSource = null; }
+  const es = new EventSource('/job/' + jobId + '/progress');
+  _progressSource = es;
+
+  es.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      showProgress(d.progress, d.stage, d.details);
+      if (d.done) {
+        es.close();
+        _progressSource = null;
+        onDone(d.error || '');
+      }
+    } catch (_) {}
+  };
+
+  es.onerror = () => {
+    es.close();
+    _progressSource = null;
+    onDone('Connection lost');
+  };
+}
+
+// ── Node tree renderer ────────────────────────────────────────────────────────
+function badgeClass(node) {
+  const prefab = (node.components || {}).prefab_instance || {};
+  if (prefab.is_instance) return 'badge-prefab';
+  const status = (node.meta || {}).conversion_status;
+  if (status === 'partial' || status === 'unknown') return 'badge-partial';
+  const t = node.node_type || '';
+  if (t === 'camera') return 'badge-camera';
+  if (t === 'light')  return 'badge-light';
+  if (t === 'entity') return 'badge-entity';
+  return 'badge-group';
+}
+
+function badgeLabel(node) {
+  const prefab = (node.components || {}).prefab_instance || {};
+  if (prefab.is_instance) return getTranslation('badge_prefab');
+  return node.node_type || getTranslation('badge_group');
+}
+
+function renderTree(nodes, indent) {
+  let html = '';
+  for (const n of (nodes || [])) {
+    const pad    = '&nbsp;'.repeat(indent * 4);
+    const hint   = n.node_type || getTranslation('badge_group');
+    const badge  = `<span class="badge ${badgeClass(n)}">${badgeLabel(n)}</span>`;
+    const pos    = (n.transform || {}).position || [0, 0, 0];
+    const posStr = pos.map(v => Number(v).toFixed(2)).join(', ');
+    html += `<div class="tree-node">${pad}${n.node_name} <span style="color:#4a5568">${hint}</span>${badge} <span style="color:#374151; font-size:10px">(${posStr})</span></div>`;
+    if ((n.children || []).length) html += renderTree(n.children, indent + 1);
+  }
+  return html;
+}
+
+// ── Download report JSON ──────────────────────────────────────────────────────
+function downloadReport() {
+  const content = document.getElementById('report-output').textContent;
+  if (!content) return;
+  const name = (currentSceneIR && currentSceneIR.scene_name
+    ? currentSceneIR.scene_name : 'conversion'
+  ).replace(/[^a-z0-9_\-]/gi, '_');
+  _triggerDownload(
+    new Blob([content], { type: 'application/json' }),
+    `${name}_report.json`
+  );
+}
+
+// ── Download current scene IR as JSON ─────────────────────────────────────────
+function downloadCurrentIR() {
+  if (!currentSceneIR) return;
+  const name = (currentSceneIR.scene_name || 'scene').replace(/[^a-z0-9_\-]/gi, '_');
+  _triggerDownload(
+    new Blob([JSON.stringify(currentSceneIR, null, 2)], { type: 'application/json' }),
+    `${name}_ir.json`
+  );
+}
+
+// ── Render a scene IR into all output panels ──────────────────────────────────
+function renderSceneIR(sceneIR) {
+  if (!sceneIR) return;
+  currentSceneIR = sceneIR;
+
+  document.getElementById('tree-view').innerHTML =
+    renderTree(sceneIR.nodes || [], 0) ||
+    `<span style="color:#4a5568">${getTranslation('no_nodes')}</span>`;
+
+  document.getElementById('ir-output').textContent = JSON.stringify(sceneIR, null, 2);
+
+  const n = sceneIR.node_count || 0;
+  document.getElementById('scene-info').textContent =
+    `${n} ${n === 1 ? getTranslation('node_singular') : getTranslation('node_plural')}  •  IR v${sceneIR.ir_version || '?'}`;
+}
+
+// ── Scene dropdown change handler ─────────────────────────────────────────────
+// No re-fetch — reads from allScenesIR populated during conversion.
+function onSceneChange() {
+  const sel  = document.getElementById('scene-select');
+  const name = sel.value;
+  const ir   = allScenesIR[name];
+  if (ir) {
+    renderSceneIR(ir);
+  } else {
+    document.getElementById('tree-view').innerHTML =
+      `<span style="color:#f87171">${getTranslation('scene_unavailable', { name })}</span>`;
+    document.getElementById('ir-output').textContent = '';
+  }
+}
+
+// ── Populate scene dropdown ───────────────────────────────────────────────────
+function populateSceneSelector(scenes, allIR) {
+  allScenesIR = allIR || {};
+  const bar   = document.getElementById('scene-bar');
+  const sel   = document.getElementById('scene-select');
+  sel.innerHTML = '';
+
+  if (!scenes || scenes.length === 0) { bar.style.display = 'none'; return; }
+
+  scenes.forEach(name => {
+    const opt       = document.createElement('option');
+    opt.value       = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+
+  // Show bar only when there are multiple scenes
+  bar.style.display = scenes.length > 1 ? 'flex' : 'none';
+  sel.value = scenes[0];
+  if (allScenesIR[scenes[0]]) renderSceneIR(allScenesIR[scenes[0]]);
+}
+
+// ── Refresh all dynamic conversion text after language switch ─────────────────
+function refreshDynamicText() {
+  const m = lastConversionMeta;
+  if (!m) return;
+
+  if (m.statusType === 'fatal') {
+    setStatus(getTranslation('error_prefix') + m.statusPayload, 'error');
+  } else if (m.statusType === 'partial') {
+    setStatus(getTranslation('converted_with_errors') + m.statusPayload, 'error');
+  } else if (m.statusType === 'success') {
+    setStatus(getTranslation('conversion_success'), 'success');
+  }
+
+  document.getElementById('pill-total').textContent   = getTranslation('pill_total',   { n: m.total });
+  document.getElementById('pill-mapped').textContent  = getTranslation('pill_mapped',  { n: m.mapped });
+  document.getElementById('pill-partial').textContent = getTranslation('pill_partial', { n: m.partial });
+  document.getElementById('pill-unknown').textContent = getTranslation('pill_unknown', { n: m.unknown });
+
+  if (m.prefabsFound !== undefined) {
+    const pf = m.prefabsFound;
+    document.getElementById('pill-prefabs').textContent =
+      `${pf} ${pf === 1 ? getTranslation('prefab_singular') : getTranslation('prefab_plural')}`;
+  }
+
+  if (m.scenesCount > 0) {
+    const sc = m.scenesCount;
+    document.getElementById('pill-scenes').textContent =
+      `${sc} ${sc === 1 ? getTranslation('scene_singular') : getTranslation('scene_plural')}`;
+  }
+
+  document.getElementById('job-id-label').textContent = getTranslation('job_label') + (m.jobId || '—');
+}
+
+// ── Handle completed conversion result ───────────────────────────────────────
+function _handleConversionResult(data) {
+  if (data.error && !(data.scene_ir && data.scene_ir.node_count)) {
+    setStatus(getTranslation('error_prefix') + data.error, 'error');
+    LogStore.add('ERROR', data.error, {}, 'conversion');
+    LogView.render();
+    return;
+  }
+
+  const report   = data.report   || {};
+  lastReport     = report;
+  const summary  = report.summary || {};
+  const warnings = report.warnings || [];
+  const score    = ((report.conversion_score || 0) * 100).toFixed(0);
+
+  let statusType, statusPayload;
+  if (data.error) {
+    statusType    = 'partial';
+    statusPayload = data.error;
+    setStatus(getTranslation('converted_with_errors') + data.error, 'error');
+    LogStore.add('ERROR', 'Converted with errors: ' + data.error, {}, 'conversion');
+  } else {
+    statusType    = 'success';
+    statusPayload = score;
+    setStatus(getTranslation('conversion_success'), 'success');
+    LogStore.add('INFO', 'Conversion complete', {}, 'conversion');
+  }
+
+  const totalNodes = summary.total_nodes || 0;
+  if (totalNodes > 0) {
+    LogStore.add('INFO',
+      `Nodes: ${totalNodes} total, ${summary.mapped || 0} mapped, ` +
+      `${summary.partial || 0} partial, ${summary.unknown || 0} unknown`,
+      summary, 'results');
+  }
+  const sceneNames = data.scenes || [];
+  if (sceneNames.length > 0) {
+    LogStore.add('INFO', `${sceneNames.length} scene(s) exported: ${sceneNames.join(', ')}`,
+      { scenes: sceneNames }, 'results');
+  }
+  if (data.prefabs_found !== undefined) {
+    LogStore.add('INFO', `${data.prefabs_found} prefab(s) found`,
+      { count: data.prefabs_found }, 'results');
+  }
+  warnings.forEach(w => LogStore.add('WARNING', w, {}, 'results'));
+
+  // Populate decisions — universal types deduplicated (shown once regardless of count)
+  const seenUniversalTypes = new Set();
+  for (const d of (data.decisions || [])) {
+    if (d.universal) {
+      if (seenUniversalTypes.has(d.type)) continue;
+      seenUniversalTypes.add(d.type);
+    }
+    LogStore.add('DECISION', d.message, d.context || {}, 'results');
+  }
+
+  LogView.render();
+
+  document.getElementById('summary').style.display = 'flex';
+  document.getElementById('pill-total').textContent   = getTranslation('pill_total',   { n: summary.total_nodes || 0 });
+  document.getElementById('pill-mapped').textContent  = getTranslation('pill_mapped',  { n: summary.mapped      || 0 });
+  document.getElementById('pill-partial').textContent = getTranslation('pill_partial', { n: summary.partial     || 0 });
+  document.getElementById('pill-unknown').textContent = getTranslation('pill_unknown', { n: summary.unknown     || 0 });
+
+  const prefabPill   = document.getElementById('pill-prefabs');
+  const prefabsFound = data.prefabs_found;
+  if (prefabsFound !== undefined) {
+    prefabPill.textContent   = `${prefabsFound} ${prefabsFound === 1 ? getTranslation('prefab_singular') : getTranslation('prefab_plural')}`;
+    prefabPill.style.display = 'inline-block';
+  } else {
+    prefabPill.style.display = 'none';
+  }
+
+  const scenesPill = document.getElementById('pill-scenes');
+  if (sceneNames.length > 0) {
+    const sc = sceneNames.length;
+    scenesPill.textContent   = `${sc} ${sc === 1 ? getTranslation('scene_singular') : getTranslation('scene_plural')}`;
+    scenesPill.style.display = 'inline-block';
+  } else {
+    scenesPill.style.display = 'none';
+  }
+
+  lastConversionMeta = {
+    statusType, statusPayload, score,
+    total:        summary.total_nodes || 0,
+    mapped:       summary.mapped      || 0,
+    partial:      summary.partial     || 0,
+    unknown:      summary.unknown     || 0,
+    prefabsFound, scenesCount: sceneNames.length,
+    warnings, jobId: data.job_id || null,
+  };
+
+  const allIR = data.all_scenes_ir || (
+    data.scene_ir ? { [data.scene_ir.scene_name || 'Scene']: data.scene_ir } : {}
+  );
+  const names = sceneNames.length > 0 ? sceneNames
+    : (data.scene_ir ? [data.scene_ir.scene_name || 'Scene'] : []);
+  populateSceneSelector(names, allIR);
+  if (names.length === 0 && data.scene_ir) renderSceneIR(data.scene_ir);
+
+  document.getElementById('report-output').textContent = JSON.stringify(report, null, 2);
+
+  currentJobId       = data.job_id       || null;
+  currentProjectName = data.project_name || null;
+  document.getElementById('job-id-label').textContent = getTranslation('job_label') + (data.job_id || '—');
+
+  const dlProjBtn = document.getElementById('download-project-btn');
+  dlProjBtn.style.display = data.project_available ? 'inline-block' : 'none';
+  dlProjBtn.disabled      = !data.project_available;
+
+  document.getElementById('download-report-data-btn').style.display = 'inline-block';
+
+  const expiryDiv = document.getElementById('expiry-notice');
+  if (data.expires_at) {
+    const expiresDate = new Date(data.expires_at);
+    const timeStr     = expiresDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const minutes     = Math.max(1, Math.round((expiresDate - Date.now()) / 60000));
+    expiryDiv.textContent  = getTranslation('expiry_notice', { time: timeStr, minutes });
+    expiryDiv.style.display = 'block';
+    LogStore.add('WARNING',
+      getTranslation('expiry_notice', { time: timeStr, minutes }),
+      { expires_at: data.expires_at }, 'results');
+  } else {
+    expiryDiv.style.display = 'none';
+  }
+
+  document.getElementById('output-card').style.display = 'block';
+}
+
+// ── Main convert function ─────────────────────────────────────────────────────
+async function runConvert() {
+  const fileInput = document.getElementById('file-input');
+  if (!fileInput.files.length) return;
+
+  const sourceOption = document.getElementById('source-engine-select').value;
+  const targetOption = document.getElementById('target-engine-select').value;
+  const src          = parseEngineOption(sourceOption);
+  const tgt          = parseEngineOption(targetOption);
+
+  const btn = document.getElementById('convert-btn');
+  btn.disabled = true;
+  hideProgress();
+  setStatus(getTranslation('loading_converting'), 'loading');
+  showProgress(0, getTranslation('progress_init'), '');
+
+  // Reset state
+  allScenesIR        = {};
+  currentSceneIR     = null;
+  currentProjectName = null;
+  lastConversionMeta = null;
+  lastReport         = null;
+  document.getElementById('scene-bar').style.display              = 'none';
+  document.getElementById('output-card').style.display            = 'none';
+  document.getElementById('expiry-notice').style.display          = 'none';
+  document.getElementById('download-report-data-btn').style.display = 'none';
+
+  // Clear and seed log
+  LogStore.clear();
+  LogView.setFilter('ALL');
+  LogStore.add('INFO', `Starting: ${sourceOption} → ${targetOption}`,
+    { source: sourceOption, target: targetOption }, 'setup');
+  LogStore.add('INFO', `File: ${fileInput.files[0].name}  (${(fileInput.files[0].size / 1024).toFixed(1)} KB)`,
+    {}, 'setup');
+  LogView.render();
+
+  const form = new FormData();
+  form.append('file',            fileInput.files[0]);
+  form.append('unity_version',   src.version);
+  form.append('source_engine',   sourceOption);
+  form.append('target_engine',   targetOption);
+  form.append('target_version',  tgt.version);
+  form.append('convert_scripts', document.getElementById('convert-scripts-check').checked ? 'true' : 'false');
+  form.append('consented',       document.getElementById('consent-check').checked ? 'true' : 'false');
+  form.append('previous_job_id', currentJobId || '');
+  form.append('language',        currentLanguage);
+
+  // Phase 1: submit job — server returns {job_id} immediately.
+  let jobId;
+  try {
+    const resp = await fetch('/convert/unity', { method: 'POST', body: form });
+    if (!resp.ok) {
+      const errBody = await resp.json().catch(() => ({}));
+      throw new Error(errBody.detail || `HTTP ${resp.status}`);
+    }
+    const init = await resp.json();
+    if (init.error) throw new Error(init.error);
+    jobId = init.job_id;
+  } catch (e) {
+    hideProgress();
+    setStatus(getTranslation('network_error') + e.message, 'error');
+    LogStore.add('ERROR', 'Network error: ' + e.message, { error: e.message }, 'conversion');
+    LogView.render();
+    btn.disabled = false;
+    return;
+  }
+
+  LogStore.add('INFO', `Job started: ${jobId}`, { job_id: jobId }, 'conversion');
+  LogView.render();
+
+  // Phase 2: connect SSE progress stream; on done, fetch full result.
+  _connectProgress(jobId, async (sseError) => {
+    btn.disabled = false;
+
+    if (sseError) {
+      freezeProgress(sseError);
+      setStatus(getTranslation('error_prefix') + sseError, 'error');
+      LogStore.add('ERROR', sseError, {}, 'conversion');
+      LogView.render();
+      return;
+    }
+
+    hideProgress();
+
+    // Fetch the full result from the result endpoint.
+    let data;
+    try {
+      const resp = await fetch('/job/' + jobId + '/result');
+      data = await resp.json();
+    } catch (e) {
+      setStatus(getTranslation('network_error') + e.message, 'error');
+      LogStore.add('ERROR', 'Failed to fetch result: ' + e.message, {}, 'conversion');
+      LogView.render();
+      return;
+    }
+
+    _handleConversionResult(data);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init() {
+  document.getElementById('languageSelector').value = currentLanguage;
+  if (currentLanguage !== 'lt') updateLanguage(currentLanguage);
+  LogView.render(); // show empty state immediately
+  loadVersions();
+})();
+</script>
+</body>
+</html>
